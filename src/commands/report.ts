@@ -8,7 +8,7 @@ import { extractDoraSignals, analyzeRootCauses } from '../analysis/rootCause.js'
 import { generateRecommendations } from '../analysis/recommendations.js';
 import { generateManagerReport } from '../reports/manager.js';
 import { generateEmployeeDigest } from '../reports/employee.js';
-import { buildEmailConfig, deliverToEmail } from '../delivery/email.js';
+import { sendConfiguredEmail } from '../delivery/email.js';
 import { formatEmployeeDigest, formatManagerReport } from '../utils/formatting.js';
 import { DEFAULT_PERIOD_DAYS, formatReportDate, nowIso } from '../utils/dates.js';
 import { logger } from '../utils/logger.js';
@@ -97,26 +97,12 @@ export async function runReport(options: ReportOptions = {}): Promise<void> {
       );
     }
 
-    const emailConfig = buildEmailConfig(config, [to]);
-    if (!emailConfig) {
-      throw new Error(
-        'Email delivery requires [delivery.smtp] in sprintlens.toml and SPRINTLENS_SMTP_USER/PASS env vars',
-      );
-    }
+    const messageId = await sendConfiguredEmail(config, [to], {
+      subject: `Sprint Health — ${metadata.teamName} · ${metadata.generatedAt}`,
+      body,
+    });
 
-    const result = await deliverToEmail(
-      {
-        subject: `Sprint Health — ${metadata.teamName} · ${metadata.generatedAt}`,
-        body,
-      },
-      emailConfig,
-    );
-
-    if (!result.success) {
-      throw new Error(result.error ?? 'Email delivery failed');
-    }
-
-    logger.info(`Manager report emailed to ${to} (${result.messageId})`);
+    logger.info(`Manager report emailed to ${to} (${messageId})`);
     return;
   }
 
@@ -151,26 +137,12 @@ export async function runDigest(options: DigestOptions = {}): Promise<void> {
     const body = formatEmployeeDigest(digest);
 
     if (options.email) {
-      const emailConfig = buildEmailConfig(config, [identity.email]);
-      if (!emailConfig) {
-        throw new Error(
-          'Email delivery requires [delivery.smtp] in sprintlens.toml and SPRINTLENS_SMTP_USER/PASS env vars',
-        );
-      }
+      const messageId = await sendConfiguredEmail(config, [identity.email], {
+        subject: `Your SprintLens digest — ${metadata.teamName}`,
+        body,
+      });
 
-      const result = await deliverToEmail(
-        {
-          subject: `Your SprintLens digest — ${metadata.teamName}`,
-          body,
-        },
-        emailConfig,
-      );
-
-      if (!result.success) {
-        throw new Error(result.error ?? `Failed to email ${identity.email}`);
-      }
-
-      logger.info(`Digest emailed to ${name} <${identity.email}>`);
+      logger.info(`Digest emailed to ${name} <${identity.email}> (${messageId})`);
     } else {
       console.log(body);
       console.log('');

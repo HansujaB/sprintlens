@@ -81,3 +81,24 @@ export async function deliverToEmail(
     };
   }
 }
+
+/** Send email using sprintlens.toml SMTP config — throws on failure. */
+export async function sendConfiguredEmail(
+  config: SprintLensConfig,
+  to: string[],
+  payload: DeliveryPayload,
+): Promise<string> {
+  const emailConfig = buildEmailConfig(config, to);
+  if (!emailConfig) {
+    throw new Error(
+      'Email delivery requires [delivery.smtp] in sprintlens.toml and SPRINTLENS_SMTP_USER/PASS env vars',
+    );
+  }
+
+  const result = await deliverToEmail(payload, emailConfig);
+  if (!result.success) {
+    throw new Error(result.error ?? 'Email delivery failed');
+  }
+
+  return result.messageId ?? 'sent';
+}

@@ -59,11 +59,13 @@ function parseDelivery(raw: unknown): SprintLensConfig['delivery'] {
   const smtp = parseSmtp(delivery.smtp);
 
   const managerEmail = String(delivery.manager_email ?? '').trim();
+  const executiveEmail = String(delivery.executive_email ?? '').trim();
 
-  if (!managerEmail && !smtp) return undefined;
+  if (!managerEmail && !executiveEmail && !smtp) return undefined;
 
   return {
     manager_email: managerEmail || undefined,
+    executive_email: executiveEmail || undefined,
     smtp,
   };
 }

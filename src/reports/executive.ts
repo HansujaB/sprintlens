@@ -62,7 +62,7 @@ export async function generateExecutiveReport(
   return {
     type: 'executive',
     metadata,
-    summary: prose.split('\n')[0] ?? '',
+    summary: prose,
     velocityTrend: analysis.signals.velocity[0]?.description ?? 'No velocity trend data.',
     deliveryConfidence: inferDeliveryConfidence(analysis),
     engineeringRisk: analysis.signals.risk[0]?.description ?? 'No elevated delivery risks.',

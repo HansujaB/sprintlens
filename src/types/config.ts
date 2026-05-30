@@ -22,6 +22,7 @@ export interface SmtpConfig {
 /** Optional delivery targets and transport config. */
 export interface DeliverySettings {
   manager_email?: string;
+  executive_email?: string;
   smtp?: SmtpConfig;
 }
 

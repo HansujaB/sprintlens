@@ -211,7 +211,8 @@ bob   = { github = "bobsmith",  email = "bob@company.com",   slack = "Bob S" }
 
 # Required for --email commands (edit before use)
 [delivery]
-manager_email = "eng-manager@company.com"
+manager_email   = "eng-manager@company.com"
+executive_email = "cto@company.com"
 
 [delivery.smtp]
 host   = "smtp.gmail.com"
@@ -249,6 +250,10 @@ Run from the directory containing your `sprintlens.toml`:
 | `npx sprintlens report` | Full pipeline — Coral queries, analysis, Claude report |
 | `npx sprintlens report --email` | Email manager report to `[delivery] manager_email` |
 | `npx sprintlens digest --email` | Email each engineer their digest (uses `[engineers]` emails) |
+| `npx sprintlens executive` | Executive engineering health summary (requires API key) |
+| `npx sprintlens executive --email` | Email to `[delivery] executive_email` |
+| `npx sprintlens dora` | Formatted DORA metrics — no LLM required |
+| `npx sprintlens dora --email` | Email DORA report to executive or manager |
 | `npx sprintlens dryrun` | Coral queries + deterministic analysis only (no LLM) |
 
 For prose reports, set your Anthropic API key:
@@ -263,6 +268,8 @@ export SPRINTLENS_SMTP_USER=...
 export SPRINTLENS_SMTP_PASS=...
 npx sprintlens report --email
 npx sprintlens digest --email
+npx sprintlens executive --email
+npx sprintlens dora --email
 ```
 
 Without an API key, `sprintlens report` outputs structured JSON (signals, root causes, recommendations).

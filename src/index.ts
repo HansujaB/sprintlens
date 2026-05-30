@@ -3,6 +3,8 @@
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
 import { runReport, runDigest } from './commands/report.js';
+import { runExecutive } from './commands/executive.js';
+import { runDora } from './commands/dora.js';
 import { runDryrun } from './commands/dryrun.js';
 import { logger } from './utils/logger.js';
 
@@ -13,15 +15,17 @@ Usage:
   sprintlens doctor            Verify config, Coral CLI, and sources
   sprintlens report            Run full pipeline and generate manager report
   sprintlens report --email    Email manager report to [delivery] manager_email
-  sprintlens report --email --to addr@company.com
   sprintlens digest              Print employee digests to terminal
   sprintlens digest --email      Email each engineer their digest
-  sprintlens digest --engineer alice --email
+  sprintlens executive           Executive engineering health summary
+  sprintlens executive --email   Email to [delivery] executive_email
+  sprintlens dora                Formatted DORA metrics (no LLM)
+  sprintlens dora --email          Email DORA metrics report
   sprintlens dryrun            Run Coral queries + analysis without LLM
 
 Options:
   --email                      Deliver via SMTP instead of terminal
-  --to <address>               Override manager email recipient
+  --to <address>               Override email recipient
   --engineer <name>            Target one engineer (digest command)
   --help                       Show this help message
 `;
@@ -48,6 +52,8 @@ async function main(): Promise<void> {
     return;
   }
 
+  const emailOptions = { email: flags.email, emailTo: flags.to };
+
   try {
     switch (command) {
       case 'init':
@@ -57,10 +63,16 @@ async function main(): Promise<void> {
         await runDoctor();
         break;
       case 'report':
-        await runReport({ email: flags.email, emailTo: flags.to });
+        await runReport(emailOptions);
         break;
       case 'digest':
-        await runDigest({ email: flags.email, engineer: flags.engineer });
+        await runDigest({ ...emailOptions, engineer: flags.engineer });
+        break;
+      case 'executive':
+        await runExecutive(emailOptions);
+        break;
+      case 'dora':
+        await runDora(emailOptions);
         break;
       case 'dryrun':
         await runDryrun();

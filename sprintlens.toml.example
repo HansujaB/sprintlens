@@ -26,7 +26,8 @@ sarah = { github = "sarah-dev",  email = "sarah@company.com",  slack = "Sarah K"
 # Email delivery — edit before using: sprintlens report --email or sprintlens digest --email
 # SMTP login is not stored here; set env vars SPRINTLENS_SMTP_USER and SPRINTLENS_SMTP_PASS
 [delivery]
-manager_email = "eng-manager@company.com"
+manager_email   = "eng-manager@company.com"
+executive_email = "cto@company.com"
 
 [delivery.smtp]
 host   = "smtp.gmail.com"
