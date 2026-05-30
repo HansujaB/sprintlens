@@ -11,8 +11,23 @@ export interface TeamConfig {
   slack_channel: string;
 }
 
+/** SMTP settings for email delivery — credentials via env vars. */
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  from: string;
+}
+
+/** Optional delivery targets and transport config. */
+export interface DeliverySettings {
+  manager_email?: string;
+  smtp?: SmtpConfig;
+}
+
 /** Full SprintLens configuration loaded from sprintlens.toml. */
 export interface SprintLensConfig {
   team: TeamConfig;
   engineers: Record<string, EngineerIdentity>;
+  delivery?: DeliverySettings;
 }

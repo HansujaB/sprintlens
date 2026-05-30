@@ -68,7 +68,12 @@ export interface SlackDeliveryConfig {
 
 export interface EmailDeliveryConfig {
   to: string[];
-  from?: string;
+  from: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  user?: string;
+  pass?: string;
 }
 
 export interface DeliveryConfig {

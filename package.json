@@ -2,6 +2,16 @@
   "name": "sprintlens",
   "version": "1.0.0",
   "description": "Engineering team health via Coral cross-source SQL — velocity, load, risk, and DORA metrics in one terminal command.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "sprintlens": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
   "keywords": [
     "coral",
     "engineering",
@@ -18,12 +28,23 @@
   "author": "",
   "license": "MIT",
   "files": [
+    "dist/",
     "skills/",
+    "examples/",
     "CLAUDE.md",
     "README.md",
     "sprintlens.toml.example"
   ],
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "nodemailer": "^6.10.1"
   }
 }
