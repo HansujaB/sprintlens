@@ -32,12 +32,7 @@ JOIN github.pull_requests pr
 WHERE i.completed_at  > NOW() - INTERVAL '30 days'
   AND i.team_name     = '{linear_team}'
   AND i.assignee_email IN (
-    -- paste engineer emails from sprintlens.toml here
-    'alice@company.com',
-    'bob@company.com',
-    'priya@company.com',
-    'james@company.com',
-    'sarah@company.com'
+    {engineer_emails}
   )
 
 GROUP BY i.assignee_email
