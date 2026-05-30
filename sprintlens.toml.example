@@ -23,8 +23,8 @@ priya = { github = "priya42",    email = "priya@company.com",  slack = "Priya"  
 james = { github = "jamesm",     email = "james@company.com",  slack = "James M" }
 sarah = { github = "sarah-dev",  email = "sarah@company.com",  slack = "Sarah K" }
 
-# Email delivery (optional)
-# Credentials via env: SPRINTLENS_SMTP_USER, SPRINTLENS_SMTP_PASS
+# Email delivery — edit before using: sprintlens report --email or sprintlens digest --email
+# SMTP login is not stored here; set env vars SPRINTLENS_SMTP_USER and SPRINTLENS_SMTP_PASS
 [delivery]
 manager_email = "eng-manager@company.com"
 

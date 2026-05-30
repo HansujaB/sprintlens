@@ -208,6 +208,22 @@ slack_channel     = "eng-backend"
 [engineers]
 alice = { github = "alice-dev", email = "alice@company.com", slack = "Alice" }
 bob   = { github = "bobsmith",  email = "bob@company.com",   slack = "Bob S" }
+
+# Required for --email commands (edit before use)
+[delivery]
+manager_email = "eng-manager@company.com"
+
+[delivery.smtp]
+host   = "smtp.gmail.com"
+port   = 587
+secure = false
+from   = "SprintLens <reports@company.com>"
+```
+
+Set SMTP credentials before emailing reports:
+```bash
+export SPRINTLENS_SMTP_USER=your-smtp-user
+export SPRINTLENS_SMTP_PASS=your-smtp-password
 ```
 
 ### 6. Verify everything
@@ -231,12 +247,22 @@ Run from the directory containing your `sprintlens.toml`:
 | `npx sprintlens init` | Create `sprintlens.toml` from the example file |
 | `npx sprintlens doctor` | Verify config, Coral CLI, and connected sources |
 | `npx sprintlens report` | Full pipeline — Coral queries, analysis, Claude report |
+| `npx sprintlens report --email` | Email manager report to `[delivery] manager_email` |
+| `npx sprintlens digest --email` | Email each engineer their digest (uses `[engineers]` emails) |
 | `npx sprintlens dryrun` | Coral queries + deterministic analysis only (no LLM) |
 
 For prose reports, set your Anthropic API key:
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 npx sprintlens report
+```
+
+For email delivery, edit `[delivery]` and `[delivery.smtp]` in `sprintlens.toml`, then:
+```bash
+export SPRINTLENS_SMTP_USER=...
+export SPRINTLENS_SMTP_PASS=...
+npx sprintlens report --email
+npx sprintlens digest --email
 ```
 
 Without an API key, `sprintlens report` outputs structured JSON (signals, root causes, recommendations).

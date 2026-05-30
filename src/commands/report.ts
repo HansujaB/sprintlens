@@ -1,4 +1,4 @@
-import { loadConfig } from '../config/loadConfig.js';
+import { loadConfig, listEngineers } from '../config/loadConfig.js';
 import { discoverSources, runAllQueries } from '../coral/client.js';
 import { extractVelocitySignals } from '../analysis/velocity.js';
 import { extractWorkloadSignals } from '../analysis/workload.js';
@@ -7,18 +7,14 @@ import { extractBottleneckSignals } from '../analysis/bottlenecks.js';
 import { extractDoraSignals, analyzeRootCauses } from '../analysis/rootCause.js';
 import { generateRecommendations } from '../analysis/recommendations.js';
 import { generateManagerReport } from '../reports/manager.js';
+import { generateEmployeeDigest } from '../reports/employee.js';
 import { buildEmailConfig, deliverToEmail } from '../delivery/email.js';
+import { formatEmployeeDigest, formatManagerReport } from '../utils/formatting.js';
+import { DEFAULT_PERIOD_DAYS, formatReportDate, nowIso } from '../utils/dates.js';
 import { logger } from '../utils/logger.js';
 import type { SprintLensConfig } from '../types/config.js';
 import type { AnalysisResult, CoralSourceStatus } from '../types/signals.js';
 import type { ReportMetadata } from '../types/report.js';
-import { formatManagerReport } from '../utils/formatting.js';
-import { nowIso } from '../utils/dates.js';
-import { logger } from '../utils/logger.js';
-import type { SprintLensConfig } from '../types/config.js';
-import type { AnalysisResult, CoralSourceStatus } from '../types/signals.js';
-import type { ReportMetadata } from '../types/report.js';
-import { DEFAULT_PERIOD_DAYS, formatReportDate } from '../utils/dates.js';
 
 export interface ReportOptions {
   cwd?: string;
