@@ -1,0 +1,29 @@
+{
+  "name": "sprintlens",
+  "version": "1.0.0",
+  "description": "Engineering team health via Coral cross-source SQL — velocity, load, risk, and DORA metrics in one terminal command.",
+  "keywords": [
+    "coral",
+    "engineering",
+    "sprint",
+    "dora",
+    "claude-code",
+    "devex",
+    "linear",
+    "github",
+    "sentry",
+    "pagerduty",
+    "slack"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "skills/",
+    "CLAUDE.md",
+    "README.md",
+    "sprintlens.toml.example"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

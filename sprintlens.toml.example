@@ -1,0 +1,24 @@
+# SprintLens Configuration
+# Copy this file to sprintlens.toml and fill in your team's details.
+# This file maps engineer identities across GitHub, Linear, Sentry,
+# PagerDuty, and Slack so cross-source JOINs work correctly.
+
+[team]
+name              = "Backend"           # Display name used in reports
+github_org        = "acme-corp"         # Your GitHub organization slug
+github_repo       = "acme-backend"      # Primary repo to analyze
+linear_team       = "Backend"           # Exact team name in Linear
+sentry_org        = "acme"              # Your Sentry organization slug
+pagerduty_service = "backend-api"       # PagerDuty service name
+slack_channel     = "eng-backend"       # Slack channel name without #
+
+# Add one entry per engineer.
+# github  = their GitHub login (from github.com/login)
+# email   = their work email (used in Linear, Sentry, PagerDuty)
+# slack   = their Slack display name (as it appears in the workspace)
+[engineers]
+alice = { github = "alice-dev",  email = "alice@company.com",  slack = "Alice"   }
+bob   = { github = "bobsmith",   email = "bob@company.com",    slack = "Bob S"   }
+priya = { github = "priya42",    email = "priya@company.com",  slack = "Priya"   }
+james = { github = "jamesm",     email = "james@company.com",  slack = "James M" }
+sarah = { github = "sarah-dev",  email = "sarah@company.com",  slack = "Sarah K" }
