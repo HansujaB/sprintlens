@@ -9,9 +9,11 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "node scripts/copy-sql.mjs",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "demo": "npm run build --silent && node dist/demo.js"
+    "demo": "npm run build && node dist/demo.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "coral",
@@ -24,17 +26,28 @@
     "github",
     "sentry",
     "pagerduty",
-    "slack"
+    "slack",
+    "engineering-metrics",
+    "team-health"
   ],
-  "author": "",
+  "author": "SprintLens Contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HansujaB/sprintlens.git"
+  },
+  "homepage": "https://github.com/HansujaB/sprintlens#readme",
+  "bugs": {
+    "url": "https://github.com/HansujaB/sprintlens/issues"
+  },
   "files": [
     "dist/",
     "docs/",
     "skills/",
     "examples/",
-    "CLAUDE.md",
+    "LICENSE",
     "README.md",
+    "CLAUDE.md",
     "sprintlens.toml.example"
   ],
   "engines": {
