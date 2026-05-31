@@ -6,7 +6,7 @@ export function formatManagerReport(report: ManagerReport): string {
   const { metadata } = report;
   const divider = '━'.repeat(43);
 
-  return [
+  const lines = [
     divider,
     `  SPRINT HEALTH — ${metadata.teamName}`,
     `  ${metadata.generatedAt} · Last ${metadata.periodDays} days`,
@@ -20,18 +20,36 @@ export function formatManagerReport(report: ManagerReport): string {
     '',
     'LOAD',
     report.loadSection,
+  ];
+
+  if (report.rootCauses.length > 0) {
+    lines.push('', 'ROOT CAUSES');
+    for (const cause of report.rootCauses) {
+      lines.push(`• ${cause.title} — ${cause.summary}`);
+    }
+  }
+
+  if (report.recommendations.length > 0) {
+    lines.push('', 'RECOMMENDED ACTIONS');
+    for (const rec of report.recommendations) {
+      lines.push(`• ${rec.action}`);
+    }
+  }
+
+  lines.push(
     '',
     'RISKS',
     report.risksSection,
     '',
     divider,
     `Sources: ${metadata.sourcesQueried.join(' · ') || 'none'}`,
-    metadata.sourcesMissing.length > 0
-      ? `Missing: ${metadata.sourcesMissing.join(' · ')}`
-      : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  );
+
+  if (metadata.sourcesMissing.length > 0) {
+    lines.push(`Missing: ${metadata.sourcesMissing.join(' · ')}`);
+  }
+
+  return lines.filter((l, i) => !(l === '' && lines[i - 1] === '')).join('\n');
 }
 
 /** Render an employee digest as plain text for email or terminal. */

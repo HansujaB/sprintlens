@@ -44,7 +44,7 @@ flowchart TD
     DRYRUN["<b>sprintlens dryrun</b>\nNo API key needed"]
     DRYRUN --> DRY1["① loadConfig — reads sprintlens.toml"]
     DRY1 --> DRY2["② discoverSources\n   coral source list\n   records connected vs missing"]
-    DRY2 --> DRY3["③ runAllQueries — 4 Coral SQL queries\n   velocity.sql · load.sql\n   risks.sql · dora.sql"]
+    DRY2 --> DRY3["③ runAllQueries — 4 Coral SQL queries\n   velocity.sql · load.sql · risks.sql\n   dora-deployment-frequency.sql\n   dora-lead-time.sql\n   + dora-cfr.sql + dora-mttr.sql\n   only if PagerDuty connected"]
     DRY3 --> DRY4["④ formatVelocityFacts\n   team avg cycle days\n   per-engineer deviation %"]
     DRY4 --> DRY5["⑤ formatWorkloadFacts\n   normalized load index vs team avg\n   per-engineer issues · PRs · incidents"]
     DRY5 --> DRY6["⑥ formatBottleneckFacts\n   total open PRs\n   concentration % per engineer"]
@@ -80,7 +80,7 @@ flowchart TD
     DIG_EMAIL -- Yes --> DIG_SMTP["📧 Per engineer to their email\n   Subject: Your SprintLens digest — Backend"]
 
     EXECUTIVE["<b>sprintlens executive</b>\nRequires ANTHROPIC_API_KEY"]
-    EXECUTIVE --> EXE1["① runPipeline — same Coral + analyzeWithLLM\n② inferDeliveryConfidence:\n   counts critical-severity signals\n   ≥3 critical → low confidence\n   ≥1 critical → medium confidence\n   0 critical → high confidence"]
+    EXECUTIVE --> EXE1["① runPipeline — same Coral + analyzeWithLLM\n② Delivery confidence from LLM analysis\n   Claude returns high/medium/low\n   based on cross-signal reasoning\n   No hardcoded thresholds"]
     EXE1 --> EXE2["③ generateExecutiveReport\n   buildExecutivePrompt:\n   • root causes only — no engineer names\n   • DORA signals · delivery confidence\n   • Focus: systems patterns not people\n   → callClaude max 20 lines"]
     EXE2 --> EXE3["④ Anthropic API call — EXECUTIVE\n   Returns:\n   2-sentence summary\n   velocity trend · engineering risk\n   top 2 recommended actions"]
     EXE3 --> EXE_EMAIL{"--email flag?"}
@@ -88,7 +88,7 @@ flowchart TD
     EXE_EMAIL -- Yes --> EXE_SMTP["📧 sendConfiguredEmail\n  To: executive_email or manager_email\n  Subject: Engineering Health — Backend"]
 
     DORA["<b>sprintlens dora</b>\nNo API key needed"]
-    DORA --> DORA1["① loadConfig + discoverSources\n② runAllQueries → dora.sql\n③ extractDoraSignals\n   industry-standard DORA tier math\n④ formatDoraReport — no LLM"]
+    DORA --> DORA1["① loadConfig + discoverSources\n② runDoraQuery(config, connectedSources)\n   Builds UNION from dora-*.sql fragments\n   PagerDuty blocks only if PD connected\n③ extractDoraSignals\n   industry-standard DORA tier math\n④ formatDoraReport — no LLM"]
     DORA1 --> DORA_EMAIL{"--email flag?"}
     DORA_EMAIL -- No --> DORA_TERM["📋 Terminal:\nDORA METRICS — Backend · Last 30 days\n\nDeployment Frequency  3.2/week  Medium\nLead Time             18 hrs    High\nChange Failure Rate   8%        High  *\nMTTR                  4 hrs     High  *\n\n* Requires PagerDuty to compute\n  coral source add --interactive pagerduty"]
     DORA_EMAIL -- Yes --> DORA_SMTP["📧 Email to executive_email or manager_email"]
@@ -153,7 +153,7 @@ flowchart TD
     V4 --> V5["④ Normalize identities via engineers map\n   github login → display name\n⑤ Flag anyone > 50% above team avg\n   Note PRs open > 5 days\n   Compute DORA Lead Time tier"]
     V5 --> VOUT["📋 User sees:\nVELOCITY — Backend · Last 30 days\nAverage cycle time is 4.2 days.\nAlice is at 7.1 days (69% above avg).\nPR review time 19 hrs — up from 8 hrs,\nsuggesting a review bottleneck.\nLead Time for Changes: 18 hrs (High tier)"]
 
-    LDC --> L1["① Discovers columns for all connected sources\n② Cross-source load SQL:\n   linear.issues (state = in_progress)\n   LEFT JOIN github.pull_requests (open)\n   LEFT JOIN sentry.issues (unresolved)\n   LEFT JOIN pagerduty.incidents (30d)\n   GROUP BY engineer\n③ Normalize identities\n④ Multi-signal overload heuristics:\n   5+ issues AND 6+ PD pages = flag\n   3+ simultaneous signals = critical"]
+    LDC --> L1["① Discovers columns for all connected sources\n② Cross-source load SQL:\n   linear.issues (state = in_progress)\n   LEFT JOIN github.pull_requests (open)\n   LEFT JOIN sentry.issues (unresolved)\n   LEFT JOIN pagerduty.incidents (30d)\n   GROUP BY engineer + weighted load_score\n③ Normalize identities via engineers map\n④ Raw counts + load_score passed to Claude\n   Claude determines severity —\n   no hardcoded thresholds in SprintLens"]
     L1 --> LOUT["📋 User sees:\nLOAD — Backend · Last 30 days\nBob: 9 active issues · 4 open PRs ·\n8 PagerDuty pages — significantly above avg.\nConsider redistributing 2-3 issues\nbefore next sprint planning.\nAlice: 6 issues · 2 PRs — borderline.\nMonitor next sprint."]
 
     RSK --> R1["① Query open non-draft PRs > 3 days old\n   Filter: base_repo_owner + base_repo_name\n   from sprintlens.toml"]
