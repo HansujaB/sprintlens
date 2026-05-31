@@ -22,6 +22,7 @@ export interface LoadRow {
   open_prs: number;
   unresolved_sentry_errors: number;
   pagerduty_incidents_30d: number;
+  load_score: number;
 }
 
 /** Row shape returned by risks.sql — stale PR facts with correlated error counts. */
@@ -32,6 +33,7 @@ export interface RiskRow {
   days_open: number;
   related_sentry_errors: number;
   related_incidents: number;
+  risk_score: number;
 }
 
 /** DORA metric identifiers matching dora.sql output. */

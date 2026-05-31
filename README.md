@@ -2,14 +2,17 @@
 
 > Engineering team health in one terminal command.
 
-SprintLens answers "where is my team slowing down — and why?" by JOINing data across GitHub, Linear, Sentry, PagerDuty, and Slack using [Coral](https://withcoral.com) — a local cross-source SQL runtime.
+## The problem
 
-It ships two ways:
+Every Monday morning, your engineering manager opens five tabs.
 
-- **npm CLI** — a TypeScript pipeline that runs Coral queries, uses Claude to analyze findings in context, and generates manager reports via the Claude API
-- **Claude Code skill** — interactive `sprint:` commands inside Claude Code for ad-hoc questions and schema discovery
+GitHub — to see which PRs have been sitting for a week. Linear — to count who has too many active issues. Sentry — to find out if any of those stale PRs correlate with errors in production. PagerDuty — to check if anyone is drowning in on-call load. A spreadsheet — to try to join all of this together by hand.
 
-What used to take 2 hours of manual work across 5 tools takes 60 seconds.
+Two hours later, they have a rough picture of the sprint. It's already out of date.
+
+**SprintLens automates that entire process in under 60 seconds.**
+
+It uses [Coral](https://withcoral.com) — a local cross-source SQL runtime — to JOIN data across all five tools simultaneously, then passes the structured findings to Claude to reason about root causes and produce a clear, actionable briefing. Everything runs on your machine. No backend, no dashboard, no login.
 
 ```
 > sprintlens report
@@ -20,25 +23,29 @@ What used to take 2 hours of manual work across 5 tools takes 60 seconds.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 VELOCITY
-Average cycle time is 4.2 days. Alice is at 7.1 days — 69% above
-team average. PR review time increased from 8hrs to 19hrs this
-sprint, suggesting a review bottleneck on the auth service.
+Average cycle time is 4.1 days. Alice is at 7.1 days — 73% above
+team average. PR review time doubled to 19hrs this sprint,
+consistent with a review queue bottleneck.
 
 LOAD
 Bob has 9 active issues, 4 open PRs, and 8 PagerDuty pages this
-month — significantly above team average. Consider redistributing
-2-3 issues before next sprint planning.
+month — all four load signals elevated. Clear burnout risk.
+Redistribute 2-3 issues before next sprint planning.
 
 RISKS
 • PR #483 "refactor payment service" — open 9 days, 4 correlated
-  Sentry errors. Needs triage today before it escalates.
-• PR #491 "update auth middleware" — open 6 days, no reviewers
-  assigned. Alice is the likely owner — check her availability.
+  Sentry errors, 1 incident. Triage today.
+• PR #491 "update auth middleware" — open 6 days, no reviewers.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Queried: GitHub · Linear · Sentry · PagerDuty
-2026-05-31 09:00 UTC
+Sources: GitHub · Linear · Sentry · PagerDuty
+May 31, 2026
 ```
+
+It ships two ways:
+
+- **npm CLI** — a TypeScript pipeline that runs Coral queries, uses Claude to analyze findings in context, and generates manager reports via the Claude API
+- **Claude Code skill** — interactive `sprint:` commands inside Claude Code for ad-hoc questions and schema discovery
 
 The same briefing is also available inside Claude Code:
 
@@ -46,9 +53,12 @@ The same briefing is also available inside Claude Code:
 > sprint: full report
 ```
 
+> **Try it without any setup** — `npm run demo` runs a full interactive demo with hardcoded sample data. No Coral CLI, no API key required.
+
 See `examples/manager-report.md`, `examples/employee-dm.md`, and `examples/executive-report.md` for sample output formats.
 
 ---
+
 
 ## How it works
 
@@ -120,9 +130,10 @@ src/
 ├── analysis/     Fact formatters — no hardcoded thresholds
 ├── llm/          LLM analysis + Claude report generation
 ├── reports/      Manager, employee, and executive report objects
-├── delivery/     Slack and email
+├── delivery/     Email delivery (Slack stub — future extension)
 ├── types/        Shared TypeScript interfaces
-└── utils/        Logging, dates, formatting
+├── utils/        Logging, dates, formatting
+└── demo.ts       Interactive demo — all features, no setup required
 
 docs/
 └── user-flow.md  Detailed user flow diagrams (CLI + Claude Code skill)

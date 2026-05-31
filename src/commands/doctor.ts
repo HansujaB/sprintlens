@@ -23,6 +23,15 @@ export async function runDoctor(cwd: string = process.cwd()): Promise<void> {
     logger.error(`Coral CLI failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  // Check for Anthropic API key (warn only — not required for dryrun/dora)
+  if (process.env.ANTHROPIC_API_KEY) {
+    logger.info('ANTHROPIC_API_KEY — set (required for report, digest, executive)');
+  } else {
+    logger.warn('ANTHROPIC_API_KEY — not set (needed for report, digest, executive)');
+    logger.warn('  Set with: export ANTHROPIC_API_KEY=sk-ant-…');
+    logger.warn('  Not needed for: sprintlens dryrun, sprintlens dora');
+  }
+
   const status = await discoverSources();
   if (status.connected.length === 0) {
     ok = false;

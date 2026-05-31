@@ -200,6 +200,7 @@ function rowToLoad(row: Record<string, unknown>): LoadRow {
     open_prs: Number(row.open_prs ?? 0),
     unresolved_sentry_errors: Number(row.unresolved_sentry_errors ?? 0),
     pagerduty_incidents_30d: Number(row.pagerduty_incidents_30d ?? 0),
+    load_score: Number(row.load_score ?? 0),
   };
 }
 
@@ -211,6 +212,7 @@ function rowToRisk(row: Record<string, unknown>): RiskRow {
     days_open: Number(row.days_open ?? 0),
     related_sentry_errors: Number(row.related_sentry_errors ?? 0),
     related_incidents: Number(row.related_incidents ?? 0),
+    risk_score: Number(row.risk_score ?? 0),
   };
 }
 

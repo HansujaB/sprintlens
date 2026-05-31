@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo": "npm run build --silent && node dist/demo.js"
   },
   "keywords": [
     "coral",
@@ -29,6 +30,7 @@
   "license": "MIT",
   "files": [
     "dist/",
+    "docs/",
     "skills/",
     "examples/",
     "CLAUDE.md",
