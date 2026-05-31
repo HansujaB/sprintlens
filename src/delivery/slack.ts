@@ -1,3 +1,15 @@
+/**
+ * Slack delivery — DISABLED (not wired to any command yet).
+ *
+ * Email delivery via SMTP works for all report types (report, digest, executive, dora).
+ * Slack DM delivery is more complex to set up (requires a Bot token with
+ * channels:read + chat:write, per-user Slack ID mapping, and a workspace app install)
+ * and is left here as a future extension point.
+ *
+ * To enable: wire `deliverToSlack` into runReport / runExecutive with a --slack flag
+ * and add a [delivery.slack] section to sprintlens.toml.
+ */
+
 import type { DeliveryPayload, DeliveryResult, SlackDeliveryConfig } from '../types/report.js';
 
 /** Deliver a rendered report to Slack via webhook. No analysis or LLM calls. */

@@ -24,7 +24,7 @@ SELECT
   )                                                         AS avg_pr_review_hrs
 
 FROM linear.issues i
-JOIN github.pull_requests pr
+LEFT JOIN github.pull_requests pr
   ON pr.author      = i.assignee_email
   AND pr.merged_at  IS NOT NULL
   AND pr.merged_at  > NOW() - INTERVAL '30 days'

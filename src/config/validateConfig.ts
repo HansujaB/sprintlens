@@ -28,8 +28,7 @@ export function validateConfig(config: SprintLensConfig): void {
     if (!engineer.email?.trim()) {
       throw new Error(`sprintlens.toml [engineers.${name}] missing required field: email`);
     }
-    if (!engineer.slack?.trim()) {
-      throw new Error(`sprintlens.toml [engineers.${name}] missing required field: slack`);
-    }
+    // slack is optional — teams without Slack can leave it blank or omit it
+    // (it is only used for Slack DM delivery, which requires a separate webhook)
   }
 }

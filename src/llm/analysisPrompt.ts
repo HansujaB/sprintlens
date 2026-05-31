@@ -160,10 +160,36 @@ Respond ONLY with a JSON object matching this exact TypeScript shape (no markdow
   ]
 }
 
-The "dora" array in signals should be exactly: ${JSON.stringify(dora)}
-
+Respond ONLY with the JSON object — no markdown fences, no explanation, no trailing text.
 Only include signals, root causes, and recommendations that are genuinely notable.
-An empty array is valid if nothing stands out.`;
+An empty array is valid if nothing stands out.
+The "dora" array inside signals must be the DORA signals from the ### DORA Metrics section above, passed through unchanged.`;
+}
+
+/**
+ * Minimal shape guard — ensures the parsed object has the three top-level arrays
+ * and the expected signal sub-arrays. Coerces anything missing to [] so downstream
+ * .map() / .filter() calls never receive undefined.
+ *
+ * We intentionally keep this lightweight: the prompt schema is already strict,
+ * so this is a last-resort safety net, not a full Zod-style validator.
+ */
+function assertAnalysisShape(obj: unknown): asserts obj is AnalysisResult {
+  if (!obj || typeof obj !== 'object') {
+    throw new Error('LLM response is not a JSON object');
+  }
+  const r = obj as Record<string, unknown>;
+
+  // Coerce top-level arrays
+  if (!Array.isArray(r.rootCauses)) r.rootCauses = [];
+  if (!Array.isArray(r.recommendations)) r.recommendations = [];
+
+  // Coerce signals sub-arrays
+  if (!r.signals || typeof r.signals !== 'object') r.signals = {};
+  const s = r.signals as Record<string, unknown>;
+  for (const key of ['velocity', 'review', 'workload', 'risk', 'incident', 'dora']) {
+    if (!Array.isArray(s[key])) s[key] = [];
+  }
 }
 
 /**
@@ -189,11 +215,12 @@ export async function analyzeWithLLM(
     4096,
   );
 
-  let parsed: AnalysisResult;
+  let parsed: unknown;
   try {
     // Strip any accidental markdown fences the model may have added
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    parsed = JSON.parse(cleaned) as AnalysisResult;
+    parsed = JSON.parse(cleaned);
+    assertAnalysisShape(parsed);
   } catch (err) {
     logger.warn('LLM returned malformed JSON — falling back to empty analysis.');
     logger.warn(`Parse error: ${String(err)}`);
@@ -208,10 +235,12 @@ export async function analyzeWithLLM(
     };
   }
 
+  const result = parsed as AnalysisResult;
+
   // Always ensure DORA signals are present (they are deterministic and cheap to compute)
-  if (!parsed.signals.dora || parsed.signals.dora.length === 0) {
-    parsed.signals.dora = extractDoraSignals(facts.dora);
+  if (!result.signals.dora || result.signals.dora.length === 0) {
+    result.signals.dora = extractDoraSignals(facts.dora);
   }
 
-  return parsed;
+  return result;
 }

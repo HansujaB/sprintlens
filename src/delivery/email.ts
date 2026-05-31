@@ -91,7 +91,8 @@ export async function sendConfiguredEmail(
   const emailConfig = buildEmailConfig(config, to);
   if (!emailConfig) {
     throw new Error(
-      'Email delivery requires [delivery.smtp] in sprintlens.toml and SPRINTLENS_SMTP_USER/PASS env vars',
+      'Email delivery requires [delivery.smtp] host to be set in sprintlens.toml.\n' +
+      'Credentials are optional — only set SPRINTLENS_SMTP_USER/PASS if your relay requires auth.',
     );
   }
 
