@@ -1,49 +1,59 @@
-import type { LoadRow, WorkloadSignal, IncidentSignal } from '../types/signals.js';
-import { ANALYSIS_THRESHOLDS } from '../coral/schema.js';
+import type { LoadRow } from '../types/signals.js';
 
-function countOverloadSignals(row: LoadRow): number {
-  let count = 0;
-  if (row.active_linear_issues >= ANALYSIS_THRESHOLDS.overloadedActiveIssues) count++;
-  if (row.open_prs >= ANALYSIS_THRESHOLDS.overloadedOpenPrs) count++;
-  if (row.unresolved_sentry_errors >= 3) count++;
-  if (row.pagerduty_incidents_30d >= ANALYSIS_THRESHOLDS.pagerdutyIncidents30d) count++;
-  return count;
+/** Per-engineer load facts — no severity judgments. */
+export interface LoadFact {
+  engineer: string;
+  activeLinearIssues: number;
+  openPrs: number;
+  unresolvedSentryErrors: number;
+  pagerdutyIncidents30d: number;
+  /** How each engineer's total load compares to team average (0 = at average). */
+  loadIndexVsTeam: number | null;
 }
 
-/** Extract workload and incident signals from load query rows. */
-export function extractWorkloadSignals(rows: LoadRow[]): {
-  workload: WorkloadSignal[];
-  incident: IncidentSignal[];
-} {
-  const workload: WorkloadSignal[] = [];
-  const incident: IncidentSignal[] = [];
+/** Aggregated workload facts ready for LLM interpretation. */
+export interface WorkloadFacts {
+  teamSize: number;
+  teamAvgActiveIssues: number;
+  teamAvgOpenPrs: number;
+  teamAvgIncidents30d: number;
+  engineers: LoadFact[];
+}
 
-  for (const row of rows) {
-    const overloadSignalCount = countOverloadSignals(row);
-    if (overloadSignalCount >= ANALYSIS_THRESHOLDS.overloadSignalCount) {
-      workload.push({
-        kind: 'workload',
-        engineer: row.engineer,
-        activeIssues: row.active_linear_issues,
-        openPrs: row.open_prs,
-        sentryErrors: row.unresolved_sentry_errors,
-        pagerdutyIncidents: row.pagerduty_incidents_30d,
-        overloadSignalCount,
-        severity: overloadSignalCount >= 4 ? 'critical' : 'elevated',
-        description: `${row.engineer} has ${row.active_linear_issues} active issues, ${row.open_prs} open PRs, ${row.pagerduty_incidents_30d} pages in 30d`,
-      });
-    }
+function avg(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
 
-    if (row.pagerduty_incidents_30d >= ANALYSIS_THRESHOLDS.pagerdutyIncidents30d) {
-      incident.push({
-        kind: 'incident',
-        engineer: row.engineer,
-        incidentCount30d: row.pagerduty_incidents_30d,
-        severity: row.pagerduty_incidents_30d >= 10 ? 'critical' : 'elevated',
-        description: `${row.engineer} had ${row.pagerduty_incidents_30d} PagerDuty incidents in the last 30 days`,
-      });
-    }
-  }
+/** Format raw load rows into structured workload facts for LLM analysis. */
+export function formatWorkloadFacts(rows: LoadRow[]): WorkloadFacts {
+  const teamAvgActiveIssues = avg(rows.map((r) => r.active_linear_issues));
+  const teamAvgOpenPrs = avg(rows.map((r) => r.open_prs));
+  const teamAvgIncidents30d = avg(rows.map((r) => r.pagerduty_incidents_30d));
 
-  return { workload, incident };
+  // Normalised "load index": average of per-metric ratios vs team mean.
+  const engineers: LoadFact[] = rows.map((row) => {
+    const ratios: number[] = [];
+    if (teamAvgActiveIssues > 0) ratios.push(row.active_linear_issues / teamAvgActiveIssues);
+    if (teamAvgOpenPrs > 0) ratios.push(row.open_prs / teamAvgOpenPrs);
+    if (teamAvgIncidents30d > 0) ratios.push(row.pagerduty_incidents_30d / teamAvgIncidents30d);
+    const loadIndex = ratios.length > 0 ? avg(ratios) - 1 : null; // positive = above avg
+
+    return {
+      engineer: row.engineer,
+      activeLinearIssues: row.active_linear_issues,
+      openPrs: row.open_prs,
+      unresolvedSentryErrors: row.unresolved_sentry_errors,
+      pagerdutyIncidents30d: row.pagerduty_incidents_30d,
+      loadIndexVsTeam: loadIndex !== null ? Math.round(loadIndex * 100) / 100 : null,
+    };
+  });
+
+  return {
+    teamSize: rows.length,
+    teamAvgActiveIssues,
+    teamAvgOpenPrs,
+    teamAvgIncidents30d,
+    engineers,
+  };
 }

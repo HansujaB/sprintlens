@@ -1,38 +1,37 @@
-import type { RiskRow, RiskSignal } from '../types/signals.js';
-import { ANALYSIS_THRESHOLDS } from '../coral/schema.js';
+import type { RiskRow } from '../types/signals.js';
 
-/** Extract delivery risk signals from stale PR rows. */
-export function extractRiskSignals(rows: RiskRow[]): RiskSignal[] {
-  return rows.map((row) => {
-    const hasErrors = row.related_sentry_errors > 0 || row.related_incidents > 0;
-    let severity: RiskSignal['severity'] = 'elevated';
+/** Risk facts for a single PR — no severity judgments. */
+export interface RiskFact {
+  prNumber: number;
+  pullRequest: string;
+  author: string;
+  daysOpen: number;
+  relatedSentryErrors: number;
+  relatedIncidents: number;
+  /** Whether any correlated signals (errors or incidents) exist. */
+  hasCorrelatedSignals: boolean;
+}
 
-    if (row.days_open >= ANALYSIS_THRESHOLDS.criticalPrDays && hasErrors) {
-      severity = 'critical';
-    } else if (row.days_open >= ANALYSIS_THRESHOLDS.criticalPrDays) {
-      severity = 'elevated';
-    } else if (hasErrors) {
-      severity = 'critical';
-    }
+/** Aggregated risk facts ready for LLM interpretation. */
+export interface RiskFacts {
+  stalePrCount: number;
+  prs: RiskFact[];
+}
 
-    const parts = [`open ${row.days_open} days`];
-    if (row.related_sentry_errors > 0) {
-      parts.push(`${row.related_sentry_errors} correlated Sentry errors`);
-    }
-    if (row.related_incidents > 0) {
-      parts.push(`${row.related_incidents} related incidents`);
-    }
+/** Format raw risk rows into structured PR risk facts for LLM analysis. */
+export function formatRiskFacts(rows: RiskRow[]): RiskFacts {
+  const prs: RiskFact[] = rows.map((row) => ({
+    prNumber: row.pr_number,
+    pullRequest: row.pull_request,
+    author: row.author,
+    daysOpen: row.days_open,
+    relatedSentryErrors: row.related_sentry_errors,
+    relatedIncidents: row.related_incidents,
+    hasCorrelatedSignals: row.related_sentry_errors > 0 || row.related_incidents > 0,
+  }));
 
-    return {
-      kind: 'risk',
-      pullRequest: row.pull_request,
-      prNumber: row.pr_number,
-      author: row.author,
-      daysOpen: row.days_open,
-      relatedSentryErrors: row.related_sentry_errors,
-      relatedIncidents: row.related_incidents,
-      severity,
-      description: `PR #${row.pr_number} "${row.pull_request}" — ${parts.join(', ')}`,
-    };
-  });
+  return {
+    stalePrCount: rows.length,
+    prs,
+  };
 }

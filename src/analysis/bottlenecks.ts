@@ -1,45 +1,41 @@
-import type { LoadRow, ReviewSignal, VelocityRow } from '../types/signals.js';
-import { ANALYSIS_THRESHOLDS } from '../coral/schema.js';
+import type { LoadRow, VelocityRow } from '../types/signals.js';
 
-/** Detect review bottlenecks and ownership concentration. */
-export function extractBottleneckSignals(
-  velocity: VelocityRow[],
-  load: LoadRow[],
-): ReviewSignal[] {
-  const signals: ReviewSignal[] = [];
+/** PR concentration fact for a single engineer — no severity judgments. */
+export interface PrConcentrationFact {
+  engineer: string;
+  openPrs: number;
+  /** Fraction of all team open PRs owned by this engineer (0–100). */
+  concentrationPct: number;
+}
 
+/** Aggregated bottleneck-related facts ready for LLM interpretation. */
+export interface BottleneckFacts {
+  totalOpenPrs: number;
+  teamAvgReviewHrs: number;
+  /** Per-engineer PR concentration breakdown. */
+  prConcentration: PrConcentrationFact[];
+}
+
+/** Format velocity and load rows into review/bottleneck facts for LLM analysis. */
+export function formatBottleneckFacts(velocity: VelocityRow[], load: LoadRow[]): BottleneckFacts {
   const totalOpenPrs = load.reduce((sum, r) => sum + r.open_prs, 0);
-  if (totalOpenPrs > 0) {
-    for (const row of load) {
-      if (row.open_prs === 0) continue;
-      const concentrationPct = (row.open_prs / totalOpenPrs) * 100;
-      if (concentrationPct >= ANALYSIS_THRESHOLDS.reviewConcentrationPct) {
-        signals.push({
-          kind: 'review',
-          metric: 'review_concentration',
-          value: row.open_prs,
-          concentrationPct,
-          engineer: row.engineer,
-          severity: concentrationPct >= 60 ? 'critical' : 'elevated',
-          description: `${row.engineer} owns ${concentrationPct.toFixed(0)}% of open PRs (${row.open_prs}/${totalOpenPrs})`,
-        });
-      }
-    }
-  }
 
-  const avgReview =
-    velocity.reduce((s, r) => s + r.avg_pr_review_hrs, 0) / Math.max(velocity.length, 1);
+  const prConcentration: PrConcentrationFact[] = load.map((row) => ({
+    engineer: row.engineer,
+    openPrs: row.open_prs,
+    concentrationPct:
+      totalOpenPrs > 0 ? Math.round((row.open_prs / totalOpenPrs) * 100) : 0,
+  }));
 
-  if (avgReview >= ANALYSIS_THRESHOLDS.elevatedReviewHrs) {
-    signals.push({
-      kind: 'review',
-      metric: 'review_latency',
-      value: avgReview,
-      threshold: ANALYSIS_THRESHOLDS.elevatedReviewHrs,
-      severity: avgReview >= 48 ? 'critical' : 'elevated',
-      description: `Team average PR review latency is ${avgReview.toFixed(0)} hours`,
-    });
-  }
+  const reviewHrsValues = velocity.map((r) => r.avg_pr_review_hrs).filter((v) => v > 0);
+  const teamAvgReviewHrs =
+    reviewHrsValues.length > 0
+      ? reviewHrsValues.reduce((a, b) => a + b, 0) / reviewHrsValues.length
+      : 0;
 
-  return signals;
+  return {
+    totalOpenPrs,
+    teamAvgReviewHrs,
+    prConcentration,
+  };
 }
