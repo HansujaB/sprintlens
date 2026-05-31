@@ -1,42 +1,52 @@
 import { loadConfig } from '../config/loadConfig.js';
 import { discoverSources, runAllQueries } from '../coral/client.js';
-import { extractVelocitySignals } from '../analysis/velocity.js';
-import { extractWorkloadSignals } from '../analysis/workload.js';
-import { extractRiskSignals } from '../analysis/risks.js';
-import { extractBottleneckSignals } from '../analysis/bottlenecks.js';
-import { extractDoraSignals, analyzeRootCauses } from '../analysis/rootCause.js';
-import { generateRecommendations } from '../analysis/recommendations.js';
+import { extractDoraSignals } from '../analysis/rootCause.js';
+import { formatVelocityFacts } from '../analysis/velocity.js';
+import { formatWorkloadFacts } from '../analysis/workload.js';
+import { formatBottleneckFacts } from '../analysis/bottlenecks.js';
+import { formatRiskFacts } from '../analysis/risks.js';
 import { logger } from '../utils/logger.js';
 
-/** Run pipeline without LLM or delivery — structured JSON output only. */
+/**
+ * Dry run — fetch Coral data and output raw facts only (no LLM, no analysis).
+ *
+ * The output includes pre-computed relative numbers (deviation %, load index,
+ * concentration %, DORA tiers) that make the facts human-readable without any
+ * LLM involvement. Root causes and recommendations require `sprintlens report`.
+ */
 export async function runDryrun(cwd: string = process.cwd()): Promise<void> {
   const config = loadConfig(cwd);
   const sourceStatus = await discoverSources();
 
-  logger.info('Dry run — fetching Coral data and running analysis (no LLM)...');
+  logger.info('Dry run — fetching Coral data (no LLM analysis)...');
 
   const facts = await runAllQueries(config);
 
-  const velocity = extractVelocitySignals(facts.velocity);
-  const { workload, incident } = extractWorkloadSignals(facts.load);
-  const risk = extractRiskSignals(facts.risks);
-  const review = extractBottleneckSignals(facts.velocity, facts.load);
+  const velocity = formatVelocityFacts(facts.velocity);
+  const workload = formatWorkloadFacts(facts.load);
+  const bottlenecks = formatBottleneckFacts(facts.velocity, facts.load);
+  const risks = formatRiskFacts(facts.risks);
   const dora = extractDoraSignals(facts.dora);
-
-  const signals = { velocity, review, workload, risk, incident, dora };
-  const rootCauses = analyzeRootCauses(signals);
-  const recommendations = generateRecommendations(rootCauses);
 
   console.log(
     JSON.stringify(
       {
         team: config.team.name,
         sources: sourceStatus,
-        facts,
-        analysis: { signals, rootCauses, recommendations },
+        facts: {
+          velocity,
+          workload,
+          bottlenecks,
+          risks,
+          dora,
+        },
       },
       null,
       2,
     ),
+  );
+
+  logger.info(
+    'Dry run complete. Run `sprintlens report` with ANTHROPIC_API_KEY for full LLM analysis.',
   );
 }

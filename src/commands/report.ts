@@ -1,11 +1,7 @@
 import { loadConfig, listEngineers } from '../config/loadConfig.js';
 import { discoverSources, runAllQueries } from '../coral/client.js';
-import { extractVelocitySignals } from '../analysis/velocity.js';
-import { extractWorkloadSignals } from '../analysis/workload.js';
-import { extractRiskSignals } from '../analysis/risks.js';
-import { extractBottleneckSignals } from '../analysis/bottlenecks.js';
-import { extractDoraSignals, analyzeRootCauses } from '../analysis/rootCause.js';
-import { generateRecommendations } from '../analysis/recommendations.js';
+import { extractDoraSignals } from '../analysis/rootCause.js';
+import { analyzeWithLLM } from '../llm/analysisPrompt.js';
 import { generateManagerReport } from '../reports/manager.js';
 import { generateEmployeeDigest } from '../reports/employee.js';
 import { sendConfiguredEmail } from '../delivery/email.js';
@@ -35,21 +31,17 @@ export interface DigestOptions extends ReportOptions {
   engineer?: string;
 }
 
-/** Run Coral queries and deterministic analysis — shared by report and digest. */
-export async function runPipeline(cwd: string): Promise<PipelineResult> {
+/**
+ * Run Coral queries then LLM analysis — shared by report and digest.
+ *
+ * Unlike the old pipeline, there is no deterministic analysis pass here.
+ * analyzeWithLLM() receives all raw Coral facts and produces signals,
+ * root causes, and recommendations in a single context-aware LLM call.
+ */
+export async function runPipeline(cwd: string, apiKey: string): Promise<PipelineResult> {
   const config = loadConfig(cwd);
   const sourceStatus = await discoverSources();
   const facts = await runAllQueries(config);
-
-  const velocity = extractVelocitySignals(facts.velocity);
-  const { workload, incident } = extractWorkloadSignals(facts.load);
-  const risk = extractRiskSignals(facts.risks);
-  const review = extractBottleneckSignals(facts.velocity, facts.load);
-  const dora = extractDoraSignals(facts.dora);
-
-  const signals = { velocity, review, workload, risk, incident, dora };
-  const rootCauses = analyzeRootCauses(signals);
-  const recommendations = generateRecommendations(rootCauses);
 
   const metadata: ReportMetadata = {
     teamName: config.team.name,
@@ -59,29 +51,27 @@ export async function runPipeline(cwd: string): Promise<PipelineResult> {
     sourcesMissing: sourceStatus.missing,
   };
 
-  return {
-    config,
-    sourceStatus,
-    metadata,
-    analysis: { signals, rootCauses, recommendations },
-  };
+  const analysis = await analyzeWithLLM(facts, metadata, apiKey);
+
+  return { config, sourceStatus, metadata, analysis };
 }
 
-/** Full pipeline: Coral → analysis → report → terminal or email. */
+/** Full pipeline: Coral → LLM analysis → report → terminal or email. */
 export async function runReport(options: ReportOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd();
   logger.info(`Running SprintLens report...`);
 
-  const { config, metadata, analysis } = await runPipeline(cwd);
-
-  if (options.dryRun) {
-    console.log(JSON.stringify({ metadata, analysis }, null, 2));
+  const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    logger.warn(
+      'No ANTHROPIC_API_KEY — run with an API key for full analysis, or use `sprintlens dryrun` for raw facts.',
+    );
     return;
   }
 
-  const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    logger.warn('No ANTHROPIC_API_KEY — outputting structured analysis only');
+  const { config, metadata, analysis } = await runPipeline(cwd, apiKey);
+
+  if (options.dryRun) {
     console.log(JSON.stringify({ metadata, analysis }, null, 2));
     return;
   }
@@ -119,7 +109,7 @@ export async function runDigest(options: DigestOptions = {}): Promise<void> {
     throw new Error('ANTHROPIC_API_KEY is required for employee digests');
   }
 
-  const { config, metadata, analysis } = await runPipeline(cwd);
+  const { config, metadata, analysis } = await runPipeline(cwd, apiKey);
   const engineers = listEngineers(config).filter(([name]) =>
     options.engineer ? name === options.engineer : true,
   );

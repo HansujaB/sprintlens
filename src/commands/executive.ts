@@ -16,7 +16,7 @@ export async function runExecutive(options: ReportOptions = {}): Promise<void> {
 
   logger.info('Running SprintLens executive report...');
 
-  const { config, metadata, analysis } = await runPipeline(cwd);
+  const { config, metadata, analysis } = await runPipeline(cwd, apiKey);
   const report = await generateExecutiveReport(metadata, analysis, apiKey);
   const body = formatExecutiveReport(report);
 
