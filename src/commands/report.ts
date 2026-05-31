@@ -41,7 +41,7 @@ export interface DigestOptions extends ReportOptions {
 export async function runPipeline(cwd: string, apiKey: string): Promise<PipelineResult> {
   const config = loadConfig(cwd);
   const sourceStatus = await discoverSources();
-  const facts = await runAllQueries(config);
+  const facts = await runAllQueries(config, sourceStatus);
 
   const metadata: ReportMetadata = {
     teamName: config.team.name,

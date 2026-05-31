@@ -20,7 +20,7 @@ export async function runDryrun(cwd: string = process.cwd()): Promise<void> {
 
   logger.info('Dry run — fetching Coral data (no LLM analysis)...');
 
-  const facts = await runAllQueries(config);
+  const facts = await runAllQueries(config, sourceStatus);
 
   const velocity = formatVelocityFacts(facts.velocity);
   const workload = formatWorkloadFacts(facts.load);

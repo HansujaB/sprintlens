@@ -1,5 +1,5 @@
 import { loadConfig } from '../config/loadConfig.js';
-import { discoverSources, runAllQueries } from '../coral/client.js';
+import { discoverSources, runDoraQuery } from '../coral/client.js';
 import { extractDoraSignals } from '../analysis/rootCause.js';
 import { sendConfiguredEmail } from '../delivery/email.js';
 import { formatDoraReport } from '../utils/formatting.js';
@@ -21,9 +21,9 @@ export async function runDora(options: ReportOptions = {}): Promise<void> {
 
   const config = loadConfig(cwd);
   const sourceStatus = await discoverSources();
-  const facts = await runAllQueries(config);
+  const doraRows = await runDoraQuery(config, sourceStatus.connected);
 
-  const dora = extractDoraSignals(facts.dora);
+  const dora = extractDoraSignals(doraRows);
   const teamName = config.team.name;
   const generatedAt = formatReportDate();
 
