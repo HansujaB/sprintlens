@@ -1,6 +1,8 @@
 # SprintLens
 
 > Engineering team health in one terminal command.
+
+### NPM Package : https://www.npmjs.com/package/sprintlens
 ### Demo video : https://www.loom.com/share/6d4c8a66525c4d098dd44c6295425e6e
 ## The problem
 
