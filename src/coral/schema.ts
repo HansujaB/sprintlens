@@ -21,16 +21,3 @@ export const DORA_BENCHMARKS = {
   change_failure_rate_pct: { elite: 5, high: 10, medium: 15 },
   mttr_hours: { elite: 1, high: 24, medium: 168 },
 } as const;
-
-/** Analysis thresholds — deterministic, not LLM-derived. */
-export const ANALYSIS_THRESHOLDS = {
-  cycleTimeDeviationPct: 50,
-  stalePrDays: 3,
-  criticalPrDays: 7,
-  overloadedActiveIssues: 5,
-  overloadedOpenPrs: 3,
-  pagerdutyIncidents30d: 6,
-  overloadSignalCount: 3,
-  reviewConcentrationPct: 40,
-  elevatedReviewHrs: 24,
-} as const;

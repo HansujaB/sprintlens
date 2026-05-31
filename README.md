@@ -6,7 +6,7 @@ SprintLens answers "where is my team slowing down — and why?" by JOINing data 
 
 It ships two ways:
 
-- **npm CLI** — a TypeScript pipeline that runs Coral queries, performs deterministic analysis, and generates manager reports via the Claude API
+- **npm CLI** — a TypeScript pipeline that runs Coral queries, uses Claude to analyze findings in context, and generates manager reports via the Claude API
 - **Claude Code skill** — interactive `sprint:` commands inside Claude Code for ad-hoc questions and schema discovery
 
 What used to take 2 hours of manual work across 5 tools takes 60 seconds.
@@ -54,22 +54,57 @@ See `examples/manager-report.md`, `examples/employee-dm.md`, and `examples/execu
 
 SprintLens has no backend, no dashboard, and no login. Everything runs locally on your machine.
 
-**CLI pipeline** (`npx sprintlens report`):
+### npm CLI
 
-1. Coral connects to your tools (GitHub, Linear, Sentry, PagerDuty, Slack) via their APIs
-2. SprintLens reads your `sprintlens.toml` config to map engineer identities
-3. Cross-source SQL queries in `src/coral/queries/` retrieve facts from Coral
-4. The analysis engine (`src/analysis/`) extracts signals, root causes, and recommendations — deterministically, before any LLM call
-5. Claude writes the final manager report from structured findings (`src/llm/`)
-6. Output goes to the terminal (Slack and email delivery via `src/delivery/` is supported)
+```mermaid
+flowchart LR
+    A([sprintlens &lt;command&gt;]) --> B["loadConfig\nsprintlens.toml"]
+    B --> C["discoverSources\ncoral source list"]
+    C --> D["runAllQueries\n4 Coral SQL queries\nvelocity · load · risks · dora"]
+    D --> E["Fact Formatters\ndeviation % · load index\nconcentration % · DORA tiers"]
+    E --> F{"API key\nset?"}
+    F -- Yes --> G["analyzeWithLLM\nClaude reasons over\nraw facts in context\n→ signals · root causes\n   recommendations"]
+    G --> H["2nd Claude call\nwrites prose report"]
+    H --> I([Terminal or Email])
+    F -- No / dryrun --> J([Raw facts JSON\nno LLM cost])
+```
 
-**Claude Code skill** (interactive):
+**Commands at a glance:**
 
-1. Coral connects to your tools (GitHub, Linear, Sentry, PagerDuty, Slack) via their APIs
-2. Claude Code reads your `sprintlens.toml` config to map engineer identities
-3. Claude Code writes cross-source SQL queries tailored to your actual schema
-4. Coral executes the JOINs locally
-5. Claude Code formats and explains the results
+| Command | LLM? | What you get |
+|---|---|---|
+| `sprintlens dryrun` | ✗ | Formatted raw facts JSON — debug your data |
+| `sprintlens dora` | ✗ | DORA metrics with industry-standard tiers |
+| `sprintlens report` | ✓ | Full manager briefing — velocity, load, risks |
+| `sprintlens digest` | ✓ | Private per-engineer digest (supportive tone) |
+| `sprintlens executive` | ✓ | Systems-level summary, no engineer names |
+
+### Claude Code Skill
+
+```mermaid
+flowchart LR
+    A([User types sprint: command\nor plain-English question]) --> B["Session startup\n① Read sprintlens.toml\n② Discover live sources\n③ Verify tables exist\n④ Check required filters"]
+    B --> C{"sprintlens.toml\nfound?"}
+    C -- No --> D([🛑 Hard stop\nShows setup template])
+    C -- Yes --> E["Write tailored SQL\nusing real schema\nfrom describe_table +\nlist_columns"]
+    E --> F["Coral executes JOINs\nlocally across\nGitHub · Linear · Sentry\nPagerDuty · Slack"]
+    F --> G["Claude formats\n+ interprets results\nwith engineer names\nand specific actions"]
+    G --> H([Prose answer\nin terminal])
+```
+
+**Skill commands at a glance:**
+
+| Command | What you get |
+|---|---|
+| `sprint: full report` | Weekly briefing — velocity, load, and risks |
+| `sprint: velocity` | Cycle time and PR review time by engineer |
+| `sprint: load` | Who has too much active work right now |
+| `sprint: risks` | Open PRs most likely to cause incidents |
+| `sprint: dora` | DORA metrics from your actual data |
+| `sprint: why is [name] slow` | Focused single-engineer diagnosis |
+| `sprint: who should review [PR]` | Best available reviewer by capacity |
+
+> **Full step-by-step diagrams** — including every branch, what the user sees at each step, and error recovery paths — are in [`docs/user-flow.md`](docs/user-flow.md).
 
 Your credentials never leave your machine.
 
@@ -82,12 +117,15 @@ src/
 ├── commands/     init, doctor, report, dryrun
 ├── config/       sprintlens.toml loading and validation
 ├── coral/        Coral CLI integration and SQL queries
-├── analysis/     Signal extraction, root causes, recommendations
-├── llm/          Claude report generation (writing only)
+├── analysis/     Fact formatters — no hardcoded thresholds
+├── llm/          LLM analysis + Claude report generation
 ├── reports/      Manager, employee, and executive report objects
 ├── delivery/     Slack and email
 ├── types/        Shared TypeScript interfaces
 └── utils/        Logging, dates, formatting
+
+docs/
+└── user-flow.md  Detailed user flow diagrams (CLI + Claude Code skill)
 
 skills/SKILL.md   Claude Code skill definition
 examples/         Sample report output
@@ -254,7 +292,7 @@ Run from the directory containing your `sprintlens.toml`:
 | `npx sprintlens executive --email` | Email to `[delivery] executive_email` |
 | `npx sprintlens dora` | Formatted DORA metrics — no LLM required |
 | `npx sprintlens dora --email` | Email DORA report to executive or manager |
-| `npx sprintlens dryrun` | Coral queries + deterministic analysis only (no LLM) |
+| `npx sprintlens dryrun` | Coral queries + formatted raw facts only (no LLM) |
 
 For prose reports, set your Anthropic API key:
 ```bash
@@ -272,7 +310,7 @@ npx sprintlens executive --email
 npx sprintlens dora --email
 ```
 
-Without an API key, `sprintlens report` outputs structured JSON (signals, root causes, recommendations).
+Without an API key, `sprintlens report` exits with a warning. Use `sprintlens dryrun` to inspect raw Coral facts without any LLM call.
 
 ### Claude Code skill commands
 
@@ -343,7 +381,7 @@ SprintLens works with only GitHub + Linear connected. Each additional source add
 
 Source: [DORA State of DevOps Report](https://dora.dev)
 
-The CLI computes DORA metrics from Coral data in `src/coral/queries/dora.sql` and classifies tiers in the analysis layer. The `sprint: dora` skill command provides the same metrics interactively inside Claude Code.
+The CLI computes DORA metrics from Coral data in `src/coral/queries/dora.sql` and classifies tiers using the industry-standard benchmarks above — no LLM required. The `sprint: dora` skill command provides the same metrics interactively inside Claude Code.
 
 ---
 
@@ -352,5 +390,5 @@ The CLI computes DORA metrics from Coral data in `src/coral/queries/dora.sql` an
 - [Coral](https://withcoral.com) — cross-source SQL runtime
 - [Claude Code](https://claude.ai/code) — AI coding agent
 - [Claude API](https://anthropic.com) — report writing from structured findings
-- TypeScript + Node.js — CLI and deterministic analysis engine
+- TypeScript + Node.js — CLI, fact formatters, and LLM-enriched analysis pipeline
 - Coral Hackathon 2026
