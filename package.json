@@ -1,6 +1,6 @@
 {
   "name": "sprintlens",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Engineering team health via Coral cross-source SQL — velocity, load, risk, and DORA metrics in one terminal command.",
   "type": "module",
   "main": "dist/index.js",
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/HansujaB/sprintlens.git"
+    "url": "git+https://github.com/HansujaB/sprintlens.git"
   },
   "homepage": "https://github.com/HansujaB/sprintlens#readme",
   "bugs": {

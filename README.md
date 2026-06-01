@@ -211,22 +211,33 @@ claude mcp add --scope user coral -- coral mcp-stdio
 
 ### 4. Install SprintLens
 
-**CLI (from this repo):**
+**Install globally from npm (recommended):**
 ```bash
-git clone <repo-url> sprintlens
+npm install -g sprintlens
+```
+
+Then run from any directory containing `sprintlens.toml`:
+```bash
+sprintlens init
+```
+
+**Or from source:**
+```bash
+git clone https://github.com/HansujaB/sprintlens.git
 cd sprintlens
 npm install
 npm run build
-```
-
-Or link globally after building:
-```bash
-npm link
+npm link   # makes sprintlens available globally
 ```
 
 **Claude Code skill:**
 ```bash
-npx skills add sprintlens
+# Copy skill definition to Claude Code's skills directory
+cp node_modules/sprintlens/skills/SKILL.md ~/.claude/skills/sprintlens.md
+```
+Or if you cloned from source:
+```bash
+cp skills/SKILL.md ~/.claude/skills/sprintlens.md
 ```
 
 ### 5. Create your config file
@@ -392,7 +403,38 @@ SprintLens works with only GitHub + Linear connected. Each additional source add
 
 Source: [DORA State of DevOps Report](https://dora.dev)
 
-The CLI computes DORA metrics from Coral data in `src/coral/queries/dora.sql` and classifies tiers using the industry-standard benchmarks above — no LLM required. The `sprint: dora` skill command provides the same metrics interactively inside Claude Code.
+The CLI computes DORA metrics from Coral data across four modular SQL fragments in `src/coral/queries/dora-*.sql` and classifies tiers using the industry-standard benchmarks above — no LLM required. Fragments are assembled at runtime based on which sources are connected (PagerDuty-dependent metrics are excluded when PagerDuty is missing). The `sprint: dora` skill command provides the same metrics interactively inside Claude Code.
+
+---
+
+## FAQ
+
+**What does Claude actually see?**
+
+Run `sprintlens dryrun` to see exactly what gets passed to the LLM — structured JSON of pre-computed facts (cycle deviation %, load index, PR concentration %, DORA tiers). Claude never sees raw API responses or unaggregated rows. Every recommendation is traceable to a specific value in that JSON.
+
+**Why Coral instead of calling the APIs directly?**
+
+With direct provider MCPs, an agent makes one tool call per source, handles pagination and auth separately, and stitches results together in application code. Coral gives SprintLens one SQL interface for all sources simultaneously.
+
+Coral benchmarked this on 82 real-world AI tasks vs direct provider MCPs with Claude:
+- **20% more accurate** overall
+- **2× more cost-efficient** overall
+- **42% lower latency** overall
+- **31% more accurate** on multi-hop cross-source tasks (exactly what SprintLens does)
+- **3.4× more cost-efficient** on those same tasks
+
+**Is this a dashboard?**
+
+No. There is no backend, no database, no login, no server, and no hosted service. SprintLens is a local CLI that issues SQL queries through Coral, passes structured findings to the Anthropic API once, and prints the result to your terminal. You can also email the report, but the report is generated locally first. Your credentials never leave your machine — they're stored by Coral in OS credential storage.
+
+**Does it write to any of my tools?**
+
+No. Every Coral query is read-only `SELECT`. SprintLens cannot create, update, or delete anything in GitHub, Linear, Sentry, or PagerDuty.
+
+**What if I only have GitHub and Linear?**
+
+SprintLens works with just those two. Sentry adds error correlation to stale PRs, PagerDuty adds on-call load and DORA CFR/MTTR. Each additional source adds more signal to the diagnosis, but none are required.
 
 ---
 
