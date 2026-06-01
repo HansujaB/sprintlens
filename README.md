@@ -138,10 +138,12 @@ src/
 └── demo.ts       Interactive demo — all features, no setup required
 
 docs/
-└── user-flow.md  Detailed user flow diagrams (CLI + Claude Code skill)
+├── user-flow.md    Step-by-step user flow diagrams (CLI + Claude Code skill)
+└── coral-joins.md  How the cross-source SQL JOINs work (ER diagrams per query)
 
 skills/SKILL.md   Claude Code skill definition
-examples/         Sample report output
+examples/         Sample report output (manager, employee, executive)
+scripts/          Build utilities (copy-sql.mjs)
 ```
 
 ---
@@ -289,7 +291,24 @@ export SPRINTLENS_SMTP_USER=your-smtp-user
 export SPRINTLENS_SMTP_PASS=your-smtp-password
 ```
 
-### 6. Verify everything
+### 6. Set your Anthropic API key
+
+Required for `sprintlens report`, `sprintlens digest`, and `sprintlens executive`. Not needed for `sprintlens dryrun` or `sprintlens dora`.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+To make this permanent, add it to your shell profile:
+
+```bash
+# ~/.zshrc or ~/.bashrc
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Get a key at [console.anthropic.com](https://console.anthropic.com/).
+
+### 7. Verify everything
 
 ```bash
 coral source list
