@@ -1,6 +1,6 @@
 # SprintLens
 
-> Engineering team health in one terminal command.
+### Engineering team health in one terminal command.
 
 ### NPM Package : https://www.npmjs.com/package/sprintlens
 ### Demo video : https://www.loom.com/share/6d4c8a66525c4d098dd44c6295425e6e
@@ -8,11 +8,11 @@
 
 Every Monday morning, your engineering manager opens five tabs.
 
-GitHub — to see which PRs have been sitting for a week. 
-Linear — to count who has too many active issues. 
-Sentry — to find out if any of those stale PRs correlate with errors in production. 
-PagerDuty — to check if anyone is drowning in on-call load. 
-A spreadsheet — to try to join all of this together by hand.
+- GitHub — to see which PRs have been sitting for a week. 
+- Linear — to count who has too many active issues. 
+- Sentry — to find out if any of those stale PRs correlate with errors in production. 
+- PagerDuty — to check if anyone is drowning in on-call load. 
+- A spreadsheet — to try to join all of this together by hand.
 
 Two hours later, they have a rough picture of the sprint. It's already out of date.
 
